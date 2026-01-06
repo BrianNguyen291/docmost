@@ -20,7 +20,7 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly workspaceRepo: WorkspaceRepo,
-  ) {}
+  ) { }
 
   @HttpCode(HttpStatus.OK)
   @Post('me')
@@ -37,7 +37,7 @@ export class UserController {
     const workspaceInfo = {
       ...rest,
       memberCount,
-      hasLicenseKey: Boolean(licenseKey),
+      hasLicenseKey: true, // Modified: Always enable AI features for self-hosted
     };
 
     return { user: authUser, workspace: workspaceInfo };

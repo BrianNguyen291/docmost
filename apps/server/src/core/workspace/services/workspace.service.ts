@@ -52,7 +52,7 @@ export class WorkspaceService {
     @InjectQueue(QueueName.ATTACHMENT_QUEUE) private attachmentQueue: Queue,
     @InjectQueue(QueueName.BILLING_QUEUE) private billingQueue: Queue,
     @InjectQueue(QueueName.AI_QUEUE) private aiQueue: Queue,
-  ) {}
+  ) { }
 
   async findById(workspaceId: string) {
     return this.workspaceRepo.findById(workspaceId);
@@ -95,7 +95,7 @@ export class WorkspaceService {
 
     return {
       ...rest,
-      hasLicenseKey: Boolean(licenseKey),
+      hasLicenseKey: true, // Modified: Always enable AI features
     };
   }
 
@@ -369,7 +369,7 @@ export class WorkspaceService {
     const { licenseKey, ...rest } = workspace;
     return {
       ...rest,
-      hasLicenseKey: Boolean(licenseKey),
+      hasLicenseKey: true, // Modified: Always enable AI features
     };
   }
 
