@@ -1,0 +1,33 @@
+.kanban-board-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+}
+
+/* Force horizontal layout for kanban columns */
+.kanban-board-content {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 16px;
+  align-items: flex-start;
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Override default block stacking for kanban columns */
+.kanban-board-content > [data-node-view-content-react],
+.kanban-board-content > [data-node-view-wrapper],
+.kanban-board-content > .react-renderer {
+  display: inline-flex !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  vertical-align: top;
+}
+
+/* Ensure column wrapper doesn't break layout */
+.kanban-board-content .node-kanbanColumn {
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+}
