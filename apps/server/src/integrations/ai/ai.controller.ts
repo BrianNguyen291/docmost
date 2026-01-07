@@ -8,7 +8,7 @@ import {
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 import { AiService } from './ai.service';
 import { AiGenerateDto, AiContentResponse, AiAction } from './dto/ai-generate.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -29,31 +29,32 @@ export class AiController {
     @SkipTransform()
     async generateStream(
         @Body() dto: AiGenerateDto,
-        @Res() res: Response,
+        @Res() res: FastifyReply,
     ): Promise<void> {
         // Validate that AI is configured before starting stream
         if (!this.aiService.isConfigured()) {
-            res.status(400).json({
+            res.status(400).send({
                 error: 'AI is not configured. Please set AI_DRIVER and required API keys.'
             });
             return;
         }
 
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
-        res.flushHeaders();
+        res.raw.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
+        });
 
         try {
-            await this.aiService.streamToResponse(dto, res);
-            res.write('data: [DONE]\n\n');
+            await this.aiService.streamToResponse(dto, res.raw);
+            res.raw.write('data: [DONE]\n\n');
         } catch (error) {
             const errorMessage = (error as Error).message || 'Unknown error occurred';
             console.error('AI Stream Error:', errorMessage, error);
-            res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+            res.raw.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
         } finally {
-            res.end();
+            res.raw.end();
         }
     }
 
@@ -75,3 +76,4 @@ export class AiController {
         };
     }
 }
+
