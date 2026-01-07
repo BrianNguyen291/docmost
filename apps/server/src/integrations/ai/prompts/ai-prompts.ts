@@ -57,6 +57,13 @@ Text to continue:
 
 Provide only the continuation without any explanations or comments.`,
 
+    [AiAction.TO_CHECKLIST]: `You are a helpful assistant. Convert the following text into a markdown checklist (using - [ ]). Keep the same language as the input.
+
+Text to convert:
+{content}
+
+Provide only the checklist without any explanations or comments.`,
+
     [AiAction.TRANSLATE]: `You are an expert translator. Translate the following text into {targetLanguage}. Maintain the original meaning, tone, and style.
 
 Text to translate:

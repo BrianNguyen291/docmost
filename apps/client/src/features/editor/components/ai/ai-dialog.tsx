@@ -72,10 +72,11 @@ export const AiDialog: FC = () => {
         });
     };
 
-    const handleInsert = () => {
+    const handleInsert = async () => {
         if (!editor || !content) return;
 
-        const html = markdownToHtml(content) as string;
+        // Ensure parsing is done
+        const html = await Promise.resolve(markdownToHtml(content));
         editor.chain().focus().insertContent(html).run();
         handleClose();
     };

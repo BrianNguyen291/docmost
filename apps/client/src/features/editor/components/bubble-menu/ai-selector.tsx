@@ -21,6 +21,7 @@ import {
     IconArrowsMaximize,
     IconLanguage,
     IconListDetails,
+    IconListCheck,
     IconWriting,
     IconMessage,
     IconCheck,
@@ -88,6 +89,11 @@ export const AiSelector: FC<AiSelectorProps> = ({
             label: t("ai.summarize", "Summarize"),
             action: AiAction.SUMMARIZE,
             icon: IconListDetails,
+        },
+        {
+            label: t("ai.toChecklist", "Turn into checklist"),
+            action: AiAction.TO_CHECKLIST,
+            icon: IconListCheck,
         },
         {
             label: t("ai.continueWriting", "Continue writing"),

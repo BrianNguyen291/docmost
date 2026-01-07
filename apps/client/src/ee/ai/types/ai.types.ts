@@ -8,6 +8,7 @@ export enum AiAction {
   SUMMARIZE = "summarize",
   CONTINUE_WRITING = "continue_writing",
   TRANSLATE = "translate",
+  TO_CHECKLIST = "to_checklist",
   CUSTOM = "custom",
 }
 
