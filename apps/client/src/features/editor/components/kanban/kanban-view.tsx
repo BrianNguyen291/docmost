@@ -101,10 +101,6 @@ export const KanbanColumnView = (props: any) => {
             return;
         }
 
-        // Get position to insert at (end of this column)
-        const columnPos = getPos();
-        const insertPos = columnPos + node.nodeSize - 1;
-
         // Update the status to match the target column
         const updatedNodeJSON = {
             ...sourceNodeJSON,
@@ -114,31 +110,54 @@ export const KanbanColumnView = (props: any) => {
             }
         };
 
-        // Use a transaction to delete from source and insert at target
+        // Get current column position
+        const targetColumnPos = getPos();
+
+        // Use a single transaction to move the node atomically
         editor.chain()
             .focus()
             .command(({ tr, state }) => {
-                // First, delete the source node
+                // Find the source node
                 const sourceNode = state.doc.nodeAt(sourcePos);
-                if (sourceNode) {
-                    tr.delete(sourcePos, sourcePos + sourceNode.nodeSize);
+                if (!sourceNode) {
+                    console.error('Source node not found at position:', sourcePos);
+                    return false;
                 }
+
+                // Get the target column node to find insert position
+                const targetColumn = state.doc.nodeAt(targetColumnPos);
+                if (!targetColumn) {
+                    console.error('Target column not found');
+                    return false;
+                }
+
+                // Calculate insert position (end of target column, before closing tag)
+                let insertPos = targetColumnPos + targetColumn.nodeSize - 1;
+
+                // If source position is before target, we need to adjust
+                // because deletion will shift positions
+                if (sourcePos < targetColumnPos) {
+                    insertPos = insertPos - sourceNode.nodeSize;
+                }
+
+                // Create the new node with updated attributes
+                const nodeType = state.schema.nodes.taskCard;
+                const newNode = nodeType.create(
+                    updatedNodeJSON.attrs,
+                    sourceNode.content,
+                    sourceNode.marks
+                );
+
+                // Delete source first, then insert
+                tr.delete(sourcePos, sourcePos + sourceNode.nodeSize);
+
+                // After delete, map the insert position
+                const mappedInsertPos = tr.mapping.map(insertPos);
+                tr.insert(mappedInsertPos, newNode);
+
                 return true;
             })
             .run();
-
-        // After deletion, positions have shifted - insert at the column end
-        // We need to recalculate position after deletion
-        setTimeout(() => {
-            const newColumnPos = getPos();
-            const newNode = editor.state.doc.nodeAt(newColumnPos);
-            if (newNode) {
-                const newInsertPos = newColumnPos + newNode.nodeSize - 1;
-                editor.chain()
-                    .insertContentAt(newInsertPos, updatedNodeJSON)
-                    .run();
-            }
-        }, 10);
 
         globalDragState = null;
     }, [node, editor, getPos]);
