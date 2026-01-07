@@ -11,6 +11,7 @@ import {
     Button,
     Group,
     ScrollArea,
+    TypographyStylesProvider,
 } from "@mantine/core";
 import {
     IconSparkles,
@@ -29,6 +30,8 @@ import { useEditor } from "@tiptap/react";
 import { useAiStream } from "@/ee/ai/hooks/use-ai.ts";
 import { AiAction } from "@/ee/ai/types/ai.types.ts";
 import { useTranslation } from "react-i18next";
+import { markdownToHtml } from "@docmost/editor-ext";
+import DOMPurify from "dompurify";
 
 interface AiSelectorProps {
     editor: ReturnType<typeof useEditor>;
@@ -119,7 +122,8 @@ export const AiSelector: FC<AiSelectorProps> = ({
         if (!editor || !content || !selectionRange) return;
 
         const { from, to } = selectionRange;
-        editor.chain().focus().deleteRange({ from, to }).insertContent(content).run();
+        const html = markdownToHtml(content) as string;
+        editor.chain().focus().deleteRange({ from, to }).insertContent(html).run();
 
         handleClose();
     };
@@ -180,10 +184,14 @@ export const AiSelector: FC<AiSelectorProps> = ({
                     )}
 
                     {content && (
-                        <ScrollArea h={250}>
-                            <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-                                {content}
-                            </Text>
+                        <ScrollArea mah={350} p="md" offsetScrollbars>
+                            <TypographyStylesProvider>
+                                <div
+                                    dangerouslySetInnerHTML={{
+                                        __html: DOMPurify.sanitize(markdownToHtml(content) as string),
+                                    }}
+                                />
+                            </TypographyStylesProvider>
                             {isStreaming && <Loader size="xs" mt="xs" />}
                         </ScrollArea>
                     )}

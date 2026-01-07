@@ -46,6 +46,7 @@ import ExcalidrawMenu from "./components/excalidraw/excalidraw-menu";
 import DrawioMenu from "./components/drawio/drawio-menu";
 import { useCollabToken } from "@/features/auth/queries/auth-query.tsx";
 import SearchAndReplaceDialog from "@/features/editor/components/search-and-replace/search-and-replace-dialog.tsx";
+import { AiDialog } from "./components/ai/ai-dialog";
 import { useDebouncedCallback, useDocumentVisibility } from "@mantine/hooks";
 import { useIdle } from "@/hooks/use-idle.ts";
 import { queryClient } from "@/main.tsx";
@@ -70,7 +71,7 @@ export default function PageEditor({
   content,
 }: PageEditorProps) {
 
-  
+
   const collaborationURL = useCollaborationUrl();
   const isComponentMounted = useRef(false);
   const editorCreated = useRef(false);
@@ -78,7 +79,7 @@ export default function PageEditor({
   useEffect(() => {
     isComponentMounted.current = true;
   }, []);
-  
+
   const [currentUser] = useAtom(currentUserAtom);
   const [, setEditor] = useAtom(pageEditorAtom);
   const [, setAsideState] = useAtom(asideStateAtom);
@@ -104,8 +105,8 @@ export default function PageEditor({
   const slugId = extractPageSlugId(pageSlug);
   const userPageEditMode =
     currentUser?.user?.settings?.preferences?.pageEditMode ?? PageEditMode.Edit;
-  
-    const canScroll = useCallback(() => isComponentMounted.current && editorCreated.current, [isComponentMounted, editorCreated]);
+
+  const canScroll = useCallback(() => isComponentMounted.current && editorCreated.current, [isComponentMounted, editorCreated]);
   const { handleScrollTo } = useEditorScroll({ canScroll });
   // Providers only created once per pageId
   const providersRef = useRef<{
@@ -427,6 +428,7 @@ export default function PageEditor({
             <ExcalidrawMenu editor={editor} />
             <DrawioMenu editor={editor} />
             <LinkMenu editor={editor} appendTo={menuContainerRef} />
+            <AiDialog />
           </div>
         )}
         {showCommentPopup && <CommentDialog editor={editor} pageId={pageId} />}

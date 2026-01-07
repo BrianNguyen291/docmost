@@ -20,6 +20,7 @@ import {
   IconCalendar,
   IconAppWindow,
   IconSitemap,
+  IconSparkles,
 } from "@tabler/icons-react";
 import {
   CommandProps,
@@ -46,6 +47,16 @@ import {
 
 const CommandGroups: SlashMenuGroupedItemsType = {
   basic: [
+    {
+      title: "Ask AI",
+      description: "Ask AI to generate content or help with your page.",
+      searchTerms: ["ai", "gpt", "ask", "generate", "sparkle"],
+      icon: IconSparkles,
+      command: ({ editor, range }: CommandProps) => {
+        editor.chain().focus().deleteRange(range).run();
+        window.dispatchEvent(new CustomEvent("OPEN_AI_MODAL"));
+      },
+    },
     {
       title: "Text",
       description: "Just start typing with plain text.",
