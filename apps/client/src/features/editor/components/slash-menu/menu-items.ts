@@ -21,6 +21,7 @@ import {
   IconAppWindow,
   IconSitemap,
   IconSparkles,
+  IconTicket,
 } from "@tabler/icons-react";
 import {
   CommandProps,
@@ -628,6 +629,38 @@ const CommandGroups: SlashMenuGroupedItemsType = {
               </tbody>
             </table>
           `)
+          .run();
+      },
+    },
+    {
+      title: "Task Card",
+      description: "Insert a Jira-like task card.",
+      searchTerms: ["task", "card", "jira", "issue", "ticket"],
+      icon: IconTicket,
+      command: ({ editor, range }: CommandProps) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({
+            type: "taskCard",
+            attrs: {
+              ticketId: "TASK-" + Math.floor(Math.random() * 1000),
+              status: "To Do",
+              priority: "Medium"
+            },
+            content: [
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: " ",
+                  },
+                ],
+              },
+            ],
+          })
           .run();
       },
     },
