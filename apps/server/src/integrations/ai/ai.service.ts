@@ -98,6 +98,223 @@ export class AiService {
         }
     }
 
+    async streamToResponse(dto: AiGenerateDto, res: { write: (data: string) => void }): Promise<void> {
+        const action = dto.action || AiAction.CUSTOM;
+        const prompt = getPromptForAction(action, dto.content, {
+            prompt: dto.prompt,
+            targetLanguage: dto.targetLanguage,
+            tone: dto.tone,
+        });
+
+        const driver = this.environmentService.getAiDriver()?.toLowerCase();
+
+        if (!driver) {
+            res.write(`data: ${JSON.stringify({ error: 'AI is not configured' })}\n\n`);
+            return;
+        }
+
+        switch (driver) {
+            case 'openai':
+                await this.streamOpenAIToResponse(prompt, res);
+                break;
+            case 'gemini':
+                await this.streamGeminiToResponse(prompt, res);
+                break;
+            case 'ollama':
+                await this.streamOllamaToResponse(prompt, res);
+                break;
+            default:
+                res.write(`data: ${JSON.stringify({ error: `Unsupported AI driver: ${driver}` })}\n\n`);
+        }
+    }
+
+    private async streamOpenAIToResponse(prompt: string, res: { write: (data: string) => void }): Promise<void> {
+        const apiKey = this.environmentService.getOpenAiApiKey();
+        if (!apiKey) {
+            res.write(`data: ${JSON.stringify({ error: 'OpenAI API key is not configured' })}\n\n`);
+            return;
+        }
+
+        const apiUrl = this.environmentService.getOpenAiApiUrl() || 'https://api.openai.com/v1';
+        const model = this.environmentService.getAiCompletionModel() || 'gpt-4o-mini';
+
+        const response = await fetch(`${apiUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 4096,
+                stream: true,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            this.logger.error(`OpenAI API error: ${errorText}`);
+            res.write(`data: ${JSON.stringify({ error: `OpenAI API error: ${response.status}` })}\n\n`);
+            return;
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            res.write(`data: ${JSON.stringify({ error: 'Failed to get response stream' })}\n\n`);
+            return;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') return;
+                        try {
+                            const parsed = JSON.parse(data);
+                            const content = parsed.choices[0]?.delta?.content;
+                            if (content) {
+                                res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                            }
+                        } catch {
+                            // Ignore parse errors
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    }
+
+    private async streamGeminiToResponse(prompt: string, res: { write: (data: string) => void }): Promise<void> {
+        const apiKey = this.environmentService.getGeminiApiKey();
+        if (!apiKey) {
+            res.write(`data: ${JSON.stringify({ error: 'Gemini API key is not configured' })}\n\n`);
+            return;
+        }
+
+        const model = this.environmentService.getAiCompletionModel() || 'gemini-1.5-flash';
+
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            },
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            this.logger.error(`Gemini API error: ${errorText}`);
+            res.write(`data: ${JSON.stringify({ error: `Gemini API error: ${response.status}` })}\n\n`);
+            return;
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            res.write(`data: ${JSON.stringify({ error: 'Failed to get response stream' })}\n\n`);
+            return;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        try {
+                            const parsed = JSON.parse(data);
+                            const content = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (content) {
+                                res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                            }
+                        } catch {
+                            // Ignore parse errors
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    }
+
+    private async streamOllamaToResponse(prompt: string, res: { write: (data: string) => void }): Promise<void> {
+        const apiUrl = this.environmentService.getOllamaApiUrl();
+        const model = this.environmentService.getAiCompletionModel() || 'llama3.2';
+
+        const response = await fetch(`${apiUrl}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model, prompt, stream: true }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            this.logger.error(`Ollama API error: ${errorText}`);
+            res.write(`data: ${JSON.stringify({ error: `Ollama API error: ${response.status}` })}\n\n`);
+            return;
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            res.write(`data: ${JSON.stringify({ error: 'Failed to get response stream' })}\n\n`);
+            return;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.trim()) {
+                        try {
+                            const parsed = JSON.parse(line);
+                            if (parsed.response) {
+                                res.write(`data: ${JSON.stringify({ content: parsed.response })}\n\n`);
+                            }
+                        } catch {
+                            // Ignore parse errors
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    }
+
+
     private async generateWithOpenAI(prompt: string): Promise<AiContentResponse> {
         const apiKey = this.environmentService.getOpenAiApiKey();
         if (!apiKey) {
