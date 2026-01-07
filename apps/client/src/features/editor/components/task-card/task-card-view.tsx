@@ -80,6 +80,66 @@ const TaskCardView = (props: any) => {
         setGlobalDragState(null);
     }, []);
 
+    // Move card to target column when status is changed
+    const handleMoveToColumn = useCallback((newStatus: string) => {
+        // If status is the same, do nothing
+        if (node.attrs.status === newStatus) return;
+
+        const currentPos = getPos();
+        const doc = editor.state.doc;
+
+        // Find the target column with matching title
+        let targetColumnPos: number | null = null;
+        let targetColumnNode: any = null;
+
+        doc.descendants((n, pos) => {
+            if (n.type.name === 'kanbanColumn' && n.attrs.title === newStatus) {
+                targetColumnPos = pos;
+                targetColumnNode = n;
+                return false; // Stop searching
+            }
+            return true;
+        });
+
+        if (targetColumnPos === null || !targetColumnNode) {
+            // No matching column found, just update the status attribute
+            updateAttributes({ status: newStatus });
+            return;
+        }
+
+        // Move the card to the target column
+        editor.chain()
+            .focus()
+            .command(({ tr, state }) => {
+                const sourceNode = state.doc.nodeAt(currentPos);
+                if (!sourceNode) return false;
+
+                // Calculate insert position (end of target column)
+                let insertPos = targetColumnPos! + targetColumnNode.nodeSize - 1;
+
+                // Adjust if source is before target (positions will shift after delete)
+                if (currentPos < targetColumnPos!) {
+                    insertPos = insertPos - sourceNode.nodeSize;
+                }
+
+                // Create new node with updated status
+                const nodeType = state.schema.nodes.taskCard;
+                const newNode = nodeType.create(
+                    { ...sourceNode.attrs, status: newStatus },
+                    sourceNode.content,
+                    sourceNode.marks
+                );
+
+                // Delete then insert
+                tr.delete(currentPos, currentPos + sourceNode.nodeSize);
+                const mappedPos = tr.mapping.map(insertPos);
+                tr.insert(mappedPos, newNode);
+
+                return true;
+            })
+            .run();
+    }, [node, editor, getPos, updateAttributes]);
+
     const statusConfig: any = {
         "To Do": { color: "gray", icon: IconCircle, label: "To Do" },
         "In Progress": { color: "blue", icon: IconCircleHalf2, label: "In Progress" },
@@ -215,7 +275,7 @@ const TaskCardView = (props: any) => {
                                     <Menu.Item
                                         key={key}
                                         leftSection={<config.icon size={14} />}
-                                        onClick={() => updateAttributes({ status: key })}
+                                        onClick={() => handleMoveToColumn(key)}
                                         color={config.color}
                                         style={{ fontSize: 13 }}
                                     >
