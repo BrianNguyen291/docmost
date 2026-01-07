@@ -15,6 +15,8 @@ export interface AiGenerateDto {
   action?: AiAction;
   content: string;
   prompt?: string;
+  targetLanguage?: string;
+  tone?: string;
 }
 
 export interface AiContentResponse {

@@ -30,6 +30,17 @@ export const AiDialog: FC = () => {
 
     const [prompt, setPrompt] = useState("");
     const { startStream, isStreaming, content, resetContent, stopStream } = useAiStream();
+    const [parsedHtml, setParsedHtml] = useState<string>("");
+
+    useEffect(() => {
+        if (content) {
+            Promise.resolve(markdownToHtml(content)).then((html) => {
+                setParsedHtml(html);
+            });
+        } else {
+            setParsedHtml("");
+        }
+    }, [content]);
 
     useEffect(() => {
         const handleOpenModal = (event: any) => {
@@ -137,12 +148,12 @@ export const AiDialog: FC = () => {
                                 </Stack>
                             </Group>
                         )}
-                        {content && (
+                        {(content || parsedHtml) && (
                             <TypographyStylesProvider>
                                 <div
                                     style={{ fontSize: "0.95rem", lineHeight: 1.6 }}
                                     dangerouslySetInnerHTML={{
-                                        __html: DOMPurify.sanitize(markdownToHtml(content) as string),
+                                        __html: DOMPurify.sanitize(parsedHtml),
                                     }}
                                 />
                             </TypographyStylesProvider>

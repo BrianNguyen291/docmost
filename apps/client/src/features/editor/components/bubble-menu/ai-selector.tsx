@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import {
     ActionIcon,
     Menu,
@@ -44,6 +44,7 @@ interface AiMenuItem {
     action: AiAction;
     icon: typeof IconWand;
     description?: string;
+    subItems?: { label: string; value: string }[];
 }
 
 export const AiSelector: FC<AiSelectorProps> = ({
@@ -55,6 +56,7 @@ export const AiSelector: FC<AiSelectorProps> = ({
     const { startStream, isStreaming, content, resetContent, stopStream } = useAiStream();
     const [showResultModal, setShowResultModal] = useState(false);
     const [selectionRange, setSelectionRange] = useState<{ from: number; to: number } | null>(null);
+    const [parsedHtml, setParsedHtml] = useState<string>("");
 
     const aiMenuItems: AiMenuItem[] = [
         {
@@ -96,10 +98,17 @@ export const AiSelector: FC<AiSelectorProps> = ({
             label: t("ai.translate", "Translate"),
             action: AiAction.TRANSLATE,
             icon: IconLanguage,
+            subItems: [
+                { label: "English", value: "English" },
+                { label: "Traditional Chinese", value: "Traditional Chinese" },
+                { label: "Vietnamese", value: "Vietnamese" },
+                { label: "Korean", value: "Korean" },
+                { label: "Japanese", value: "Japanese" },
+            ]
         },
     ];
 
-    const handleAiAction = async (action: AiAction) => {
+    const handleAiAction = async (action: AiAction, targetLanguage?: string) => {
         if (!editor) return;
 
         const { from, to } = editor.state.selection;
@@ -115,14 +124,16 @@ export const AiSelector: FC<AiSelectorProps> = ({
         await startStream({
             action,
             content: selectedText,
+            targetLanguage,
         });
     };
 
-    const handleReplace = () => {
+    const handleReplace = async () => {
         if (!editor || !content || !selectionRange) return;
 
         const { from, to } = selectionRange;
-        const html = markdownToHtml(content) as string;
+        // Ensure parsing is done
+        const html = await Promise.resolve(markdownToHtml(content));
         editor.chain().focus().deleteRange({ from, to }).insertContent(html).run();
 
         handleClose();
@@ -136,6 +147,17 @@ export const AiSelector: FC<AiSelectorProps> = ({
         resetContent();
         setSelectionRange(null);
     };
+
+    // Parse markdown safely when content changes
+    useEffect(() => {
+        if (content) {
+            Promise.resolve(markdownToHtml(content)).then((html) => {
+                setParsedHtml(html);
+            });
+        } else {
+            setParsedHtml("");
+        }
+    }, [content]);
 
     return (
         <>
@@ -156,15 +178,42 @@ export const AiSelector: FC<AiSelectorProps> = ({
 
                 <Menu.Dropdown>
                     <Menu.Label>{t("ai.aiActions", "AI Actions")}</Menu.Label>
-                    {aiMenuItems.map((item) => (
-                        <Menu.Item
-                            key={item.action}
-                            leftSection={<item.icon style={{ width: rem(14) }} stroke={1.5} />}
-                            onClick={() => handleAiAction(item.action)}
-                        >
-                            {item.label}
-                        </Menu.Item>
-                    ))}
+                    {aiMenuItems.map((item) => {
+                        if (item.subItems) {
+                            return (
+                                <Menu key={item.action} trigger="hover" position="right-start" offset={0}>
+                                    <Menu.Target>
+                                        <Menu.Item
+                                            leftSection={<item.icon style={{ width: rem(14) }} stroke={1.5} />}
+                                            rightSection={<IconCheck style={{ width: rem(12), opacity: 0.5 }} />}
+                                        >
+                                            {item.label}
+                                        </Menu.Item>
+                                    </Menu.Target>
+                                    <Menu.Dropdown>
+                                        {item.subItems.map((sub) => (
+                                            <Menu.Item
+                                                key={sub.value}
+                                                onClick={() => handleAiAction(item.action, sub.value)}
+                                            >
+                                                {sub.label}
+                                            </Menu.Item>
+                                        ))}
+                                    </Menu.Dropdown>
+                                </Menu>
+                            );
+                        }
+
+                        return (
+                            <Menu.Item
+                                key={item.action}
+                                leftSection={<item.icon style={{ width: rem(14) }} stroke={1.5} />}
+                                onClick={() => handleAiAction(item.action)}
+                            >
+                                {item.label}
+                            </Menu.Item>
+                        );
+                    })}
                 </Menu.Dropdown>
             </Menu>
 
@@ -183,12 +232,12 @@ export const AiSelector: FC<AiSelectorProps> = ({
                         </Stack>
                     )}
 
-                    {content && (
+                    {(content || parsedHtml) && (
                         <ScrollArea mah={350} p="md" offsetScrollbars>
                             <TypographyStylesProvider>
                                 <div
                                     dangerouslySetInnerHTML={{
-                                        __html: DOMPurify.sanitize(markdownToHtml(content) as string),
+                                        __html: DOMPurify.sanitize(parsedHtml),
                                     }}
                                 />
                             </TypographyStylesProvider>
