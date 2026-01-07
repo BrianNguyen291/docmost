@@ -59,6 +59,7 @@ import CalloutView from "@/features/editor/components/callout/callout-view.tsx";
 import VideoView from "@/features/editor/components/video/video-view.tsx";
 import AttachmentView from "@/features/editor/components/attachment/attachment-view.tsx";
 import CodeBlockView from "@/features/editor/components/code-block/code-block-view.tsx";
+import { getWorkspaceMembers } from "@/features/workspace/services/workspace-service.ts";
 import DrawioView from "../components/drawio/drawio-view";
 import ExcalidrawView from "@/features/editor/components/excalidraw/excalidraw-view.tsx";
 import EmbedView from "@/features/editor/components/embed/embed-view.tsx";
@@ -159,8 +160,13 @@ export const mainExtensions = [
   Mention.configure({
     suggestion: {
       allowSpaces: true,
-      items: () => {
-        return [];
+      items: async ({ query }: { query: string }) => {
+        const data = await getWorkspaceMembers({ query: query, limit: 10 });
+        return data.items.map((user) => ({
+          label: user.name,
+          id: user.id,
+          avatarUrl: user.avatarUrl,
+        })) || [];
       },
       // @ts-ignore
       render: mentionRenderItems,

@@ -534,6 +534,59 @@ const CommandGroups: SlashMenuGroupedItemsType = {
       },
     },
   ],
+  templates: [
+    {
+      title: "Project Plan",
+      description: "Generate a detailed project management plan.",
+      searchTerms: ["project", "plan", "management", "template", "pm"],
+      icon: IconCheckbox,
+      command: ({ editor, range }: CommandProps) => {
+        editor.chain().focus().deleteRange(range).run();
+        window.dispatchEvent(
+          new CustomEvent("OPEN_AI_MODAL", {
+            detail: {
+              prompt:
+                "Create a detailed Project Management Plan including Project Overview (Goals, Scope), Team Roles table, Key Milestones list, and a preliminary Weekly Schedule.",
+            },
+          }),
+        );
+      },
+    },
+    {
+      title: "Kanban Board",
+      description: "Generate a Kanban-style board (Table).",
+      searchTerms: ["kanban", "board", "task", "todo", "columns"],
+      icon: IconTable,
+      command: ({ editor, range }: CommandProps) => {
+        editor.chain().focus().deleteRange(range).run();
+        window.dispatchEvent(
+          new CustomEvent("OPEN_AI_MODAL", {
+            detail: {
+              prompt:
+                "Create a Kanban board using a Markdown table with 3 columns: 'To Do', 'In Progress', and 'Done'. Fill it with 3-4 example tasks for a software project. Use emojis for fun.",
+            },
+          }),
+        );
+      },
+    },
+    {
+      title: "Meeting Notes",
+      description: "Generate a structured meeting notes template.",
+      searchTerms: ["meeting", "notes", "agenda", "minutes", "daily"],
+      icon: IconTypography,
+      command: ({ editor, range }: CommandProps) => {
+        editor.chain().focus().deleteRange(range).run();
+        window.dispatchEvent(
+          new CustomEvent("OPEN_AI_MODAL", {
+            detail: {
+              prompt:
+                "Create a Meeting Notes template. Include sections for: Date/Time, Attendees, Agenda, Key Decisions, Action Items (checklist), and Next Meeting details.",
+            },
+          }),
+        );
+      },
+    },
+  ],
 };
 
 export const getSuggestionItems = ({
