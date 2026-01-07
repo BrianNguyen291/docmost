@@ -1,27 +1,26 @@
 import { NodeViewWrapper, NodeViewContent } from "@tiptap/react";
 import { Badge, Button, Group, Text, ActionIcon, ScrollArea } from "@mantine/core";
 import { IconPlus, IconDots } from "@tabler/icons-react";
-import React, { useMemo } from "react";
+import React from "react";
 
 export const KanbanBoardView = () => {
     return (
         <NodeViewWrapper
             className="kanban-board-wrapper"
             style={{
-                display: "flex",
-                gap: "16px",
-                overflowX: "auto",
-                padding: "8px 4px",
-                alignItems: "flex-start",
                 width: "100%",
+                overflowX: "auto",
+                padding: "8px 0",
             }}
         >
             <NodeViewContent
+                className="kanban-board-content"
                 style={{
                     display: "flex",
                     gap: "16px",
-                    height: "100%",
-                    flex: 1,
+                    alignItems: "flex-start",
+                    width: "fit-content", // Allow it to grow horizontally
+                    minWidth: "100%",
                 }}
             />
         </NodeViewWrapper>
@@ -29,7 +28,7 @@ export const KanbanBoardView = () => {
 };
 
 export const KanbanColumnView = (props: any) => {
-    const { node, updateAttributes, editor, getPos } = props;
+    const { node, editor, getPos } = props;
     const count = node.childCount;
 
     const colorConfig: Record<string, string> = {
@@ -42,28 +41,30 @@ export const KanbanColumnView = (props: any) => {
     };
 
     const handleAddTask = () => {
-        // We want to append a new taskCard to this column's content
-        // We can't easily append via props.node directly in standard Tiptap API without a transaction
-        // A trick is to use the editor chain.
-
-        // Find the end position of this node
         const pos = getPos();
-        const endPos = pos + node.nodeSize - 1; // Inside the columns, at the end
+        // Insert at the end of the column
+        const endPos = pos + node.nodeSize - 1;
 
         editor.chain().insertContentAt(endPos, {
             type: "taskCard",
             attrs: {
-                status: node.attrs.title, // Auto-set status match column title if it matches standard ones
-            }
+                status: node.attrs.title,
+            },
+            content: [
+                {
+                    type: "paragraph",
+                    content: [] // Empty paragraph to satisfy schema
+                }
+            ]
         }).run();
     };
 
     return (
         <NodeViewWrapper
             style={{
-                minWidth: "300px",
-                width: "300px",
-                backgroundColor: "var(--mantine-color-default-hover)", // faint bg
+                minWidth: "280px",
+                width: "280px",
+                backgroundColor: "var(--mantine-color-default-hover)",
                 borderRadius: "12px",
                 display: "flex",
                 flexDirection: "column",
@@ -102,7 +103,7 @@ export const KanbanColumnView = (props: any) => {
 
             {/* Content Area */}
             <ScrollArea.Autosize mah={700} type="auto" offsetScrollbars>
-                <div style={{ padding: "0 12px 12px 12px", minHeight: "100px" }}>
+                <div style={{ padding: "0 12px 12px 12px", minHeight: "60px" }}>
                     <NodeViewContent />
 
                     <Button
