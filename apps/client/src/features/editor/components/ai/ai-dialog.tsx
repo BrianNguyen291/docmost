@@ -99,7 +99,7 @@ export const AiDialog: FC = () => {
                     <span style={{ fontWeight: 600 }}>{t("ai.askAi", "Ask AI")}</span>
                 </Group>
             }
-            size="lg"
+            size="xl"
             centered
         >
             <Stack gap="md">
@@ -129,8 +129,9 @@ export const AiDialog: FC = () => {
                 />
 
                 {(isStreaming || content) && (
-                    <ScrollArea
-                        mah={400}
+                    <ScrollArea.Autosize
+                        mah="60vh"
+                        type="auto"
                         offsetScrollbars
                         style={{
                             border: "1px solid var(--mantine-color-gray-3)",
@@ -159,7 +160,7 @@ export const AiDialog: FC = () => {
                             </TypographyStylesProvider>
                         )}
                         {isStreaming && content && <Loader size="xs" mt="md" variant="dots" color="blue" />}
-                    </ScrollArea>
+                    </ScrollArea.Autosize>
                 )}
 
                 <Group justify="flex-end" gap="sm">

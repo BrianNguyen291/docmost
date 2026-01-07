@@ -221,7 +221,7 @@ export const AiSelector: FC<AiSelectorProps> = ({
                 opened={showResultModal}
                 onClose={handleClose}
                 title={t("ai.aiResult", "AI Result")}
-                size="md"
+                size="lg"
                 centered
             >
                 <Stack gap="md">
@@ -233,8 +233,8 @@ export const AiSelector: FC<AiSelectorProps> = ({
                     )}
 
                     {(content || parsedHtml) && (
-                        <ScrollArea mah={350} p="md" offsetScrollbars>
-                            <TypographyStylesProvider>
+                        <ScrollArea.Autosize mah="60vh" type="auto" offsetScrollbars>
+                            <TypographyStylesProvider p="md">
                                 <div
                                     dangerouslySetInnerHTML={{
                                         __html: DOMPurify.sanitize(parsedHtml),
@@ -242,7 +242,7 @@ export const AiSelector: FC<AiSelectorProps> = ({
                                 />
                             </TypographyStylesProvider>
                             {isStreaming && <Loader size="xs" mt="xs" />}
-                        </ScrollArea>
+                        </ScrollArea.Autosize>
                     )}
 
                     <Group justify="flex-end" gap="sm">
