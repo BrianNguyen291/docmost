@@ -30,18 +30,18 @@ import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCreatePageMutation } from "@/features/page/queries/page-query";
 import { buildPageUrl } from "@/features/page/page.utils";
+import { queryClient } from "@/main";
+import { IPage } from "@/features/page/types/page.types";
+import { extractPageSlugId } from "@/lib";
+import { notifications } from "@mantine/notifications";
 
 const TaskCardView = (props: any) => {
     const { node, updateAttributes, editor } = props;
     const navigate = useNavigate();
-    const { spaceSlug } = useParams();
-    // Assuming we can get spaceId from editor storage or context, but for now we might need to rely on what's available.
-    // If editor.storage.spaceId isn't reliable, we might have a problem.
-    // However, usually editor.options.editorProps... 
-    // Let's try to get it from editor.storage. 
-    // If not, we might be blocked on creating the page without knowing spaceId.
-    // But let's assume valid context.
-    const spaceId = editor.storage.spaceId;
+    const { pageSlug, spaceSlug } = useParams();
+
+    // Get context from editor storage or params
+    const slugId = editor.storage.slugId || extractPageSlugId(pageSlug);
     const parentPageId = editor.storage.pageId;
 
     const createPage = useCreatePageMutation();
@@ -70,6 +70,18 @@ const TaskCardView = (props: any) => {
             return;
         }
 
+        // Retrieve spaceId from query cache using slugId
+        const pageData = queryClient.getQueryData<IPage>(["pages", slugId]);
+        const spaceId = pageData?.spaceId;
+
+        if (!spaceId) {
+            notifications.show({
+                message: "Unable to determine space context. Please refresh and try again.",
+                color: "red"
+            });
+            return;
+        }
+
         // Create new page
         // We'll use the task content as title, or a default.
         const title = node.textContent || `Task ${node.attrs.ticketId}`;
@@ -80,7 +92,7 @@ const TaskCardView = (props: any) => {
             // spaceId is inferred from parentPageId by the backend when creating a subpage?
             // If not, we might need to find a way to get it. 
             // Most "create subpage" flows just need parentId.
-            spaceId: spaceId, // Keeping this as per original code's attempt to get spaceId
+            spaceId,
         } as any, {
             onSuccess: (newPage) => {
                 updateAttributes({

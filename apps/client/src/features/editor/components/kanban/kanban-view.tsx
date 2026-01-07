@@ -17,9 +17,11 @@ export const KanbanBoardView = () => {
                 className="kanban-board-content"
                 style={{
                     display: "flex",
+                    flexDirection: "row",
+                    flexWrap: "nowrap",
                     gap: "16px",
                     alignItems: "flex-start",
-                    width: "fit-content", // Allow it to grow horizontally
+                    width: "max-content", // Force horizontal expansion
                     minWidth: "100%",
                 }}
             />

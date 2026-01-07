@@ -277,6 +277,7 @@ export default function PageEditor({
           // @ts-ignore
           setEditor(editor);
           editor.storage.pageId = pageId;
+          editor.storage.slugId = slugId;
           handleScrollTo(editor);
           editorCreated.current = true;
         }
