@@ -61,6 +61,7 @@ import AttachmentView from "@/features/editor/components/attachment/attachment-v
 import CodeBlockView from "@/features/editor/components/code-block/code-block-view.tsx";
 import { getWorkspaceMembers } from "@/features/workspace/services/workspace-service.ts";
 import { TaskCard } from "@/features/editor/extensions/task-card.ts";
+import { KanbanBoard, KanbanColumn } from "@/features/editor/extensions/kanban.ts";
 import DrawioView from "../components/drawio/drawio-view";
 import ExcalidrawView from "@/features/editor/components/excalidraw/excalidraw-view.tsx";
 import EmbedView from "@/features/editor/components/embed/embed-view.tsx";
@@ -259,6 +260,8 @@ export const mainExtensions = [
     },
   }).configure(),
   TaskCard,
+  KanbanBoard,
+  KanbanColumn,
 ] as any;
 
 type CollabExtensions = (provider: HocuspocusProvider, user: IUser) => any[];

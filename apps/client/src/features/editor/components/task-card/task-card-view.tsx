@@ -21,7 +21,8 @@ import {
     IconAntennaBars5,
     IconAntennaBars4,
     IconAntennaBars3,
-    IconHelp
+    IconHelp,
+    IconCalendar
 } from "@tabler/icons-react";
 import React from "react";
 
@@ -51,69 +52,78 @@ const TaskCardView = (props: any) => {
                 withBorder
                 shadow="sm"
                 radius="md"
-                padding="md"
+                padding="xs"
                 style={{
-                    transition: "all 0.2s ease",
-                    cursor: "grab",
+                    backgroundColor: "var(--mantine-color-body)",
+                    cursor: "default",
+                    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
                 }}
-                className="hover:shadow-md hover:border-blue-400"
+                className="hover:shadow-md hover:border-blue-300"
             >
-                <Group justify="space-between" mb="xs">
-                    <Group gap={6}>
-                        <Badge
-                            variant="light"
-                            color="gray"
-                            size="sm"
-                            radius="sm"
-                            leftSection={<IconTicket size={10} style={{ marginTop: 4 }} />}
-                            styles={{ root: { textTransform: 'uppercase', letterSpacing: '0.5px' } }}
+                {/* Header: ID and Context Menu */}
+                <Group justify="space-between" align="center" mb={2}>
+                    <Group gap={6} align="center">
+                        <div
+                            style={{
+                                width: 16,
+                                height: 16,
+                                borderRadius: 4,
+                                border: `2px solid ${statusConfig[node.attrs.status]?.color || "gray"}`,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
                         >
+                            {/* Tiny visual indicator of status color */}
+                        </div>
+                        <Text size="xs" c="dimmed" fw={600} style={{ letterSpacing: "0.5px" }}>
                             {node.attrs.ticketId}
-                        </Badge>
+                        </Text>
                     </Group>
 
                     <Menu position="bottom-end" shadow="md">
                         <Menu.Target>
-                            <ActionIcon variant="subtle" color="gray" size="sm">
-                                <IconDots size={16} />
+                            <ActionIcon variant="transparent" color="gray" size="sm" style={{ opacity: 0.6 }}>
+                                <IconDots size={14} />
                             </ActionIcon>
                         </Menu.Target>
                         <Menu.Dropdown>
-                            <Menu.Item color="red" onClick={() => props.deleteNode()}>
+                            <Menu.Item color="red" leftSection={<IconCircleXFilled size={14} />} onClick={() => props.deleteNode()}>
                                 Delete Task
                             </Menu.Item>
                         </Menu.Dropdown>
                     </Menu>
                 </Group>
 
-                <div style={{ marginBottom: "12px" }}>
-                    <Text size="10px" fw={700} c="dimmed" mb={4} tt="uppercase" style={{ letterSpacing: "0.5px" }}>
-                        Description
-                    </Text>
+                {/* Content Body */}
+                <div style={{ padding: "4px 0 12px 0" }}>
                     <NodeViewContent
                         style={{
-                            minHeight: "40px",
                             fontSize: "14px",
-                            lineHeight: "1.6",
+                            fontWeight: 500,
+                            lineHeight: "1.5",
                             color: "var(--mantine-color-text)",
+                            outline: "none",
                         }}
                     />
                 </div>
 
-                <div style={{ borderTop: "1px solid var(--mantine-color-gray-2)", marginBottom: "12px" }} />
-
-                <Group gap="apart" align="center">
+                {/* Compact Properties Footer */}
+                <div style={{ borderTop: "1px solid var(--mantine-color-gray-2)", paddingTop: "8px" }}>
                     <Group gap="xs">
-                        {/* Status Menu */}
+                        {/* Status */}
                         <Menu shadow="md" width={140}>
                             <Menu.Target>
                                 <Button
-                                    size="xs"
-                                    variant="light"
-                                    color={statusConfig[node.attrs.status]?.color}
+                                    size="compact-xs"
+                                    variant="subtle"
+                                    color="gray"
                                     radius="sm"
-                                    leftSection={<StatusIcon size={14} />}
-                                    styles={{ root: { height: 26, fontSize: 12 } }}
+                                    leftSection={<StatusIcon size={14} color={statusConfig[node.attrs.status]?.color || 'gray'} />}
+                                    styles={{
+                                        root: { height: 24, fontSize: 11, paddingLeft: 6, paddingRight: 6 },
+                                        section: { marginRight: 6 }
+                                    }}
                                 >
                                     {node.attrs.status}
                                 </Button>
@@ -125,6 +135,7 @@ const TaskCardView = (props: any) => {
                                         leftSection={<config.icon size={14} />}
                                         onClick={() => updateAttributes({ status: key })}
                                         color={config.color}
+                                        style={{ fontSize: 13 }}
                                     >
                                         {config.label}
                                     </Menu.Item>
@@ -132,57 +143,86 @@ const TaskCardView = (props: any) => {
                             </Menu.Dropdown>
                         </Menu>
 
-                        {/* Priority Menu */}
+                        {/* Priority */}
                         <Menu shadow="md" width={140}>
                             <Menu.Target>
-                                <Tooltip label="Priority">
-                                    <ActionIcon
-                                        variant="light"
-                                        color={priorityConfig[node.attrs.priority]?.color}
-                                        size="sm"
+                                <Tooltip label="Priority" openDelay={500}>
+                                    <Button
+                                        size="compact-xs"
+                                        variant="subtle"
+                                        color="gray"
                                         radius="sm"
-                                        style={{ width: 26, height: 26 }}
+                                        leftSection={<PriorityIcon size={14} color={priorityConfig[node.attrs.priority]?.color || 'gray'} />}
+                                        styles={{
+                                            root: { height: 24, fontSize: 11, paddingLeft: 6, paddingRight: 6 },
+                                            section: { marginRight: 6 }
+                                        }}
                                     >
-                                        <PriorityIcon size={16} />
-                                    </ActionIcon>
+                                        {node.attrs.priority}
+                                    </Button>
                                 </Tooltip>
                             </Menu.Target>
                             <Menu.Dropdown>
-                                <Menu.Label>Priority</Menu.Label>
                                 {Object.entries(priorityConfig).map(([key, config]: any) => (
                                     <Menu.Item
                                         key={key}
                                         leftSection={<config.icon size={14} />}
                                         onClick={() => updateAttributes({ priority: key })}
                                         color={config.color}
+                                        style={{ fontSize: 13 }}
                                     >
                                         {config.label}
                                     </Menu.Item>
                                 ))}
                             </Menu.Dropdown>
                         </Menu>
-                    </Group>
 
-                    {/* Assignee */}
-                    <Menu shadow="md" withArrow>
-                        <Menu.Target>
-                            <Group gap={6} style={{ cursor: "pointer" }}>
-                                {node.attrs.assignee ? (
-                                    <Avatar size={24} radius="xl" color="blue" name={node.attrs.assignee.replace("@", "")}>
-                                        {node.attrs.assignee.replace("@", "").substring(0, 2).toUpperCase()}
-                                    </Avatar>
-                                ) : (
-                                    <Avatar size={24} radius="xl" color="gray"><IconHelp size={14} /></Avatar>
-                                )}
-                            </Group>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                            <Menu.Label>Assign To</Menu.Label>
-                            <Menu.Item onClick={() => updateAttributes({ assignee: "@Unassigned" })}>Unassigned</Menu.Item>
-                            <Menu.Item onClick={() => updateAttributes({ assignee: "@Me" })}>Me</Menu.Item>
-                        </Menu.Dropdown>
-                    </Menu>
-                </Group>
+                        {/* Due Date (Mocked for visual) */}
+                        <Button
+                            size="compact-xs"
+                            variant="subtle"
+                            color={node.attrs.dueDate ? "blue" : "gray"}
+                            radius="sm"
+                            leftSection={<IconCalendar size={14} />}
+                            title="Set Due Date (Visual Only)"
+                            onClick={() => {
+                                // Simple toggle logic for demo
+                                const today = new Date().toLocaleDateString();
+                                updateAttributes({ dueDate: node.attrs.dueDate ? null : today })
+                            }}
+                            styles={{
+                                root: { height: 24, fontSize: 11, paddingLeft: 6, paddingRight: 6 },
+                                section: { marginRight: 6 }
+                            }}
+                        >
+                            {node.attrs.dueDate || "No Date"}
+                        </Button>
+
+                        {/* Assignee - Pushed to right */}
+                        <div style={{ marginLeft: "auto" }}>
+                            <Menu shadow="md" withArrow position="top-end">
+                                <Menu.Target>
+                                    <Group gap={4} style={{ cursor: "pointer" }}>
+                                        {node.attrs.assignee && node.attrs.assignee !== "@Unassigned" ? (
+                                            <Avatar size={20} radius="xl" color="blue" name={node.attrs.assignee.replace("@", "")} styles={{ root: { fontSize: 10 } }}>
+                                                {node.attrs.assignee.replace("@", "").substring(0, 2).toUpperCase()}
+                                            </Avatar>
+                                        ) : (
+                                            <ActionIcon size={20} radius="xl" variant="transparent" color="gray">
+                                                <IconHelp size={14} />
+                                            </ActionIcon>
+                                        )}
+                                    </Group>
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                    <Menu.Label>Assign To</Menu.Label>
+                                    <Menu.Item onClick={() => updateAttributes({ assignee: "@Unassigned" })}>Unassigned</Menu.Item>
+                                    <Menu.Item onClick={() => updateAttributes({ assignee: "@Me" })}>Me</Menu.Item>
+                                </Menu.Dropdown>
+                            </Menu>
+                        </div>
+                    </Group>
+                </div>
             </Card>
         </NodeViewWrapper>
     );

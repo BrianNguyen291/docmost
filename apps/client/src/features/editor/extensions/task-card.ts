@@ -25,6 +25,9 @@ export const TaskCard = Node.create({
             assignee: {
                 default: null,
             },
+            dueDate: {
+                default: null,
+            },
         };
     },
 

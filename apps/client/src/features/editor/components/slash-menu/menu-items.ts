@@ -547,7 +547,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
           new CustomEvent("OPEN_AI_MODAL", {
             detail: {
               prompt:
-                "Create a detailed Project Management Plan including Project Overview (Goals, Scope), Team Roles table, Key Milestones list, and a preliminary Weekly Schedule.",
+                "Create a detailed Project Management Plan including Project Overview (Goals, Scope), Team Roles list, Key Milestones list, and a preliminary Weekly Schedule.",
               autoRun: true,
             },
           }),
@@ -560,16 +560,50 @@ const CommandGroups: SlashMenuGroupedItemsType = {
       searchTerms: ["kanban", "board", "task", "todo", "columns"],
       icon: IconTable,
       command: ({ editor, range }: CommandProps) => {
-        editor.chain().focus().deleteRange(range).run();
-        window.dispatchEvent(
-          new CustomEvent("OPEN_AI_MODAL", {
-            detail: {
-              prompt:
-                "Create a Kanban board using a Markdown table with 3 columns: 'To Do', 'In Progress', and 'Done'. Fill it with 3-4 example tasks for a software project. Use emojis for fun.",
-              autoRun: true,
-            },
-          }),
-        );
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({
+            type: "kanbanBoard",
+            content: [
+              {
+                type: "kanbanColumn",
+                attrs: { title: "To Do", color: "gray", id: "todo" },
+                content: [
+                  {
+                    type: "taskCard",
+                    attrs: { status: "To Do", ticketId: "TASK-1", priority: "Medium" }
+                  },
+                  {
+                    type: "taskCard",
+                    attrs: { status: "To Do", ticketId: "TASK-2", priority: "High" }
+                  }
+                ]
+              },
+              {
+                type: "kanbanColumn",
+                attrs: { title: "In Progress", color: "blue", id: "inprogress" },
+                content: [
+                  {
+                    type: "taskCard",
+                    attrs: { status: "In Progress", ticketId: "TASK-3", priority: "Critical" }
+                  }
+                ]
+              },
+              {
+                type: "kanbanColumn",
+                attrs: { title: "Done", color: "green", id: "done" },
+                content: [
+                  {
+                    type: "taskCard",
+                    attrs: { status: "Done", ticketId: "TASK-4", priority: "Low" }
+                  }
+                ]
+              },
+            ],
+          })
+          .run();
       },
     },
     {
@@ -583,7 +617,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
           new CustomEvent("OPEN_AI_MODAL", {
             detail: {
               prompt:
-                "Create a Meeting Notes template. Include sections for: Date/Time, Attendees, Agenda, Key Decisions, Action Items (checklist), and Next Meeting details.",
+                "Create a Meeting Notes template. Include sections for: Date/Time, Attendees, Agenda, Key Decisions, Action Items (task list), and Next Meeting details.",
               autoRun: true,
             },
           }),
@@ -591,47 +625,37 @@ const CommandGroups: SlashMenuGroupedItemsType = {
       },
     },
     {
-      title: "Project Tracker",
-      description: "Insert a project tracking table.",
-      searchTerms: ["tracker", "project", "task", "status", "table"],
+      title: "Project Issues",
+      description: "Insert a list of project issues.",
+      searchTerms: ["tracker", "project", "task", "status", "list", "issues"],
       icon: IconList,
       command: ({ editor, range }: CommandProps) => {
         editor
           .chain()
           .focus()
           .deleteRange(range)
-          .insertContent(`
-            <table>
-              <thead>
-                <tr>
-                  <th style="background-color: #f1f3f5">Status</th>
-                  <th style="background-color: #f1f3f5">Task</th>
-                  <th style="background-color: #f1f3f5">Assignee</th>
-                  <th style="background-color: #f1f3f5">Due Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><span data-type="mention" class="mention" style="background-color: #ffe8cc; color: #fd7e14; padding: 0 4px; border-radius: 4px;">To Do</span></td>
-                  <td>Define project scope</td>
-                  <td>@Unassigned</td>
-                  <td>2024-01-01</td>
-                </tr>
-                <tr>
-                  <td><span data-type="mention" class="mention" style="background-color: #eebefa; color: #be4bdb; padding: 0 4px; border-radius: 4px;">In Progress</span></td>
-                  <td>Design mockups</td>
-                  <td>@Unassigned</td>
-                  <td>2024-01-05</td>
-                </tr>
-                 <tr>
-                  <td><span data-type="mention" class="mention" style="background-color: #c0eb75; color: #66a80f; padding: 0 4px; border-radius: 4px;">Done</span></td>
-                  <td>Kickoff meeting</td>
-                  <td>@Unassigned</td>
-                  <td>2024-01-10</td>
-                </tr>
-              </tbody>
-            </table>
-          `)
+          .insertContent([
+            {
+              type: "heading",
+              attrs: { level: 3 },
+              content: [{ type: "text", text: "Project Issues" }]
+            },
+            {
+              type: "taskCard",
+              attrs: { status: "To Do", ticketId: "DEV-101", priority: "High", assignee: "@Me" },
+              content: [{ type: "paragraph", content: [{ type: "text", text: "Fix login page authentication bug" }] }]
+            },
+            {
+              type: "taskCard",
+              attrs: { status: "In Progress", ticketId: "DEV-102", priority: "Medium", assignee: "@Unassigned" },
+              content: [{ type: "paragraph", content: [{ type: "text", text: "Implement dashboard analytics chart" }] }]
+            },
+            {
+              type: "taskCard",
+              attrs: { status: "Done", ticketId: "DEV-103", priority: "Low", assignee: "@Me" },
+              content: [{ type: "paragraph", content: [{ type: "text", text: "Update user profile settings UI" }] }]
+            }
+          ])
           .run();
       },
     },
