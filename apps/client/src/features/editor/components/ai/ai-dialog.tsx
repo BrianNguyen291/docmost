@@ -125,7 +125,7 @@ export const AiDialog: FC = () => {
                     }}
                     rightSection={
                         <ActionIcon
-                            onClick={handleSend}
+                            onClick={() => handleSend()}
                             loading={isStreaming}
                             disabled={!prompt.trim()}
                             color="blue"
