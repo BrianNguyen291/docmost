@@ -19,7 +19,7 @@ export class AiGenerateDto {
     @IsEnum(AiAction)
     action?: AiAction;
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
     content: string;
 
