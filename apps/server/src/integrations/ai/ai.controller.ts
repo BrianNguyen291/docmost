@@ -29,12 +29,20 @@ export class AiController {
         @Body() dto: AiGenerateDto,
         @Res() res: Response,
     ): Promise<void> {
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        res.flushHeaders();
-
         try {
+            // Validate that AI is configured before starting stream
+            if (!this.aiService.isConfigured()) {
+                res.status(400).json({
+                    error: 'AI is not configured. Please set AI_DRIVER and required API keys.'
+                });
+                return;
+            }
+
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.flushHeaders();
+
             for await (const chunk of this.aiService.generateStream(dto)) {
                 if ('error' in chunk) {
                     res.write(`data: ${JSON.stringify({ error: chunk.error })}\n\n`);
@@ -45,17 +53,37 @@ export class AiController {
             }
             res.write('data: [DONE]\n\n');
         } catch (error) {
-            res.write(`data: ${JSON.stringify({ error: (error as Error).message })}\n\n`);
+            const errorMessage = (error as Error).message || 'Unknown error occurred';
+            console.error('AI Stream Error:', errorMessage);
+
+            // Check if headers have been sent
+            if (!res.headersSent) {
+                res.status(500).json({ error: errorMessage });
+            } else {
+                res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+            }
         } finally {
-            res.end();
+            if (!res.writableEnded) {
+                res.end();
+            }
         }
     }
 
     @Get('config')
-    async getConfig(): Promise<{ configured: boolean; availableActions: AiAction[] }> {
+    async getConfig(): Promise<{
+        configured: boolean;
+        availableActions: AiAction[];
+        driver?: string;
+        hasApiKey?: boolean;
+    }> {
+        const configured = this.aiService.isConfigured();
+        const debugInfo = this.aiService.getDebugInfo();
+
         return {
-            configured: this.aiService.isConfigured(),
+            configured,
             availableActions: this.aiService.getAvailableActions(),
+            driver: debugInfo.driver,
+            hasApiKey: debugInfo.hasApiKey,
         };
     }
 }

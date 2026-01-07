@@ -436,4 +436,28 @@ export class AiService {
     getAvailableActions(): AiAction[] {
         return Object.values(AiAction);
     }
+
+    getDebugInfo(): { driver?: string; hasApiKey: boolean } {
+        const driver = this.environmentService.getAiDriver()?.toLowerCase();
+
+        let hasApiKey = false;
+        if (driver) {
+            switch (driver) {
+                case 'openai':
+                    hasApiKey = !!this.environmentService.getOpenAiApiKey();
+                    break;
+                case 'gemini':
+                    hasApiKey = !!this.environmentService.getGeminiApiKey();
+                    break;
+                case 'ollama':
+                    hasApiKey = !!this.environmentService.getOllamaApiUrl();
+                    break;
+            }
+        }
+
+        return {
+            driver: driver || undefined,
+            hasApiKey,
+        };
+    }
 }
