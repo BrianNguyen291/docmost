@@ -1,7 +1,15 @@
 import { NodeViewWrapper, NodeViewContent } from "@tiptap/react";
 import { Badge, Button, Group, Text, ActionIcon, ScrollArea } from "@mantine/core";
 import { IconPlus, IconDots } from "@tabler/icons-react";
-import React from "react";
+import React, { useState, useCallback, useRef } from "react";
+
+// Shared drag state using a simple module-level variable
+// This avoids the need for context providers within Tiptap node views
+let globalDragState: {
+    sourcePos: number;
+    sourceNodeJSON: any;
+    sourceColumnTitle: string;
+} | null = null;
 
 export const KanbanBoardView = () => {
     return (
@@ -21,7 +29,7 @@ export const KanbanBoardView = () => {
                     flexWrap: "nowrap",
                     gap: "16px",
                     alignItems: "flex-start",
-                    width: "max-content", // Force horizontal expansion
+                    width: "max-content",
                     minWidth: "100%",
                 }}
             />
@@ -32,6 +40,8 @@ export const KanbanBoardView = () => {
 export const KanbanColumnView = (props: any) => {
     const { node, editor, getPos } = props;
     const count = node.childCount;
+    const [isDragOver, setIsDragOver] = useState(false);
+    const dropZoneRef = useRef<HTMLDivElement>(null);
 
     const colorConfig: Record<string, string> = {
         gray: "gray",
@@ -44,7 +54,6 @@ export const KanbanColumnView = (props: any) => {
 
     const handleAddTask = () => {
         const pos = getPos();
-        // Insert at the end of the column
         const endPos = pos + node.nodeSize - 1;
 
         editor.chain().insertContentAt(endPos, {
@@ -55,24 +64,105 @@ export const KanbanColumnView = (props: any) => {
             content: [
                 {
                     type: "paragraph",
-                    content: [] // Empty paragraph to satisfy schema
+                    content: []
                 }
             ]
         }).run();
     };
+
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (globalDragState) {
+            setIsDragOver(true);
+            e.dataTransfer.dropEffect = 'move';
+        }
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+
+        if (!globalDragState) return;
+
+        const { sourcePos, sourceNodeJSON, sourceColumnTitle } = globalDragState;
+        const targetColumnTitle = node.attrs.title;
+
+        // Don't do anything if dropping in the same column
+        if (sourceColumnTitle === targetColumnTitle) {
+            globalDragState = null;
+            return;
+        }
+
+        // Get position to insert at (end of this column)
+        const columnPos = getPos();
+        const insertPos = columnPos + node.nodeSize - 1;
+
+        // Update the status to match the target column
+        const updatedNodeJSON = {
+            ...sourceNodeJSON,
+            attrs: {
+                ...sourceNodeJSON.attrs,
+                status: targetColumnTitle,
+            }
+        };
+
+        // Use a transaction to delete from source and insert at target
+        editor.chain()
+            .focus()
+            .command(({ tr, state }) => {
+                // First, delete the source node
+                const sourceNode = state.doc.nodeAt(sourcePos);
+                if (sourceNode) {
+                    tr.delete(sourcePos, sourcePos + sourceNode.nodeSize);
+                }
+                return true;
+            })
+            .run();
+
+        // After deletion, positions have shifted - insert at the column end
+        // We need to recalculate position after deletion
+        setTimeout(() => {
+            const newColumnPos = getPos();
+            const newNode = editor.state.doc.nodeAt(newColumnPos);
+            if (newNode) {
+                const newInsertPos = newColumnPos + newNode.nodeSize - 1;
+                editor.chain()
+                    .insertContentAt(newInsertPos, updatedNodeJSON)
+                    .run();
+            }
+        }, 10);
+
+        globalDragState = null;
+    }, [node, editor, getPos]);
 
     return (
         <NodeViewWrapper
             style={{
                 minWidth: "280px",
                 width: "280px",
-                backgroundColor: "var(--mantine-color-default-hover)",
+                backgroundColor: isDragOver
+                    ? "var(--mantine-color-blue-light)"
+                    : "var(--mantine-color-default-hover)",
                 borderRadius: "12px",
                 display: "flex",
                 flexDirection: "column",
                 maxHeight: "800px",
-                border: "1px solid var(--mantine-color-default-border)",
+                border: isDragOver
+                    ? "2px dashed var(--mantine-color-blue-5)"
+                    : "1px solid var(--mantine-color-default-border)",
+                transition: "all 0.2s ease",
             }}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
         >
             {/* Header */}
             <Group justify="space-between" p="sm" pb="xs">
@@ -94,8 +184,8 @@ export const KanbanColumnView = (props: any) => {
                 </Group>
 
                 <Group gap={4}>
-                    <ActionIcon variant="subtle" color="gray" size="sm">
-                        <IconPlus size={16} onClick={handleAddTask} />
+                    <ActionIcon variant="subtle" color="gray" size="sm" onClick={handleAddTask}>
+                        <IconPlus size={16} />
                     </ActionIcon>
                     <ActionIcon variant="subtle" color="gray" size="sm">
                         <IconDots size={16} />
@@ -105,7 +195,13 @@ export const KanbanColumnView = (props: any) => {
 
             {/* Content Area */}
             <ScrollArea.Autosize mah={700} type="auto" offsetScrollbars>
-                <div style={{ padding: "0 12px 12px 12px", minHeight: "60px" }}>
+                <div
+                    ref={dropZoneRef}
+                    style={{
+                        padding: "0 12px 12px 12px",
+                        minHeight: "60px",
+                    }}
+                >
                     <NodeViewContent />
 
                     <Button
@@ -126,3 +222,10 @@ export const KanbanColumnView = (props: any) => {
         </NodeViewWrapper>
     );
 };
+
+// Export the global drag state setter for use by TaskCardView
+export const setGlobalDragState = (state: typeof globalDragState) => {
+    globalDragState = state;
+};
+
+export const getGlobalDragState = () => globalDragState;

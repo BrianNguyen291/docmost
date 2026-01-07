@@ -24,9 +24,10 @@ import {
     IconHelp,
     IconCalendar,
     IconExternalLink,
-    IconFilePlus
+    IconFilePlus,
+    IconGripVertical
 } from "@tabler/icons-react";
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCreatePageMutation } from "@/features/page/queries/page-query";
 import { buildPageUrl } from "@/features/page/page.utils";
@@ -34,17 +35,50 @@ import { queryClient } from "@/main";
 import { IPage } from "@/features/page/types/page.types";
 import { extractPageSlugId } from "@/lib";
 import { notifications } from "@mantine/notifications";
+import { setGlobalDragState } from "@/features/editor/components/kanban/kanban-view";
 
 const TaskCardView = (props: any) => {
-    const { node, updateAttributes, editor } = props;
+    const { node, updateAttributes, editor, getPos } = props;
     const navigate = useNavigate();
     const { pageSlug, spaceSlug } = useParams();
+    const [isDragging, setIsDragging] = useState(false);
 
     // Get context from editor storage or params
     const slugId = editor.storage.slugId || extractPageSlugId(pageSlug);
     const parentPageId = editor.storage.pageId;
 
     const createPage = useCreatePageMutation();
+
+    // Find parent column title for drag context
+    const getParentColumnTitle = useCallback(() => {
+        const pos = getPos();
+        const resolvedPos = editor.state.doc.resolve(pos);
+        for (let depth = resolvedPos.depth; depth > 0; depth--) {
+            const parentNode = resolvedPos.node(depth);
+            if (parentNode.type.name === 'kanbanColumn') {
+                return parentNode.attrs.title;
+            }
+        }
+        return node.attrs.status;
+    }, [editor, getPos, node.attrs.status]);
+
+    const handleDragStart = useCallback((e: React.DragEvent) => {
+        setIsDragging(true);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', node.attrs.ticketId);
+
+        // Store drag state for cross-column communication
+        setGlobalDragState({
+            sourcePos: getPos(),
+            sourceNodeJSON: node.toJSON(),
+            sourceColumnTitle: getParentColumnTitle(),
+        });
+    }, [node, getPos, getParentColumnTitle]);
+
+    const handleDragEnd = useCallback(() => {
+        setIsDragging(false);
+        setGlobalDragState(null);
+    }, []);
 
     const statusConfig: any = {
         "To Do": { color: "gray", icon: IconCircle, label: "To Do" },
@@ -107,7 +141,13 @@ const TaskCardView = (props: any) => {
     };
 
     return (
-        <NodeViewWrapper className="task-card-wrapper" style={{ margin: "6px 0" }}>
+        <NodeViewWrapper
+            className="task-card-wrapper"
+            style={{ margin: "6px 0" }}
+            draggable
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+        >
             <Card
                 withBorder
                 shadow="sm"
@@ -115,8 +155,10 @@ const TaskCardView = (props: any) => {
                 padding="xs"
                 style={{
                     backgroundColor: "var(--mantine-color-body)",
-                    cursor: "default",
+                    cursor: isDragging ? "grabbing" : "grab",
                     transition: "all 0.2s ease",
+                    opacity: isDragging ? 0.5 : 1,
+                    transform: isDragging ? "rotate(2deg)" : "none",
                 }}
                 className="hover:shadow-md hover:border-blue-300"
             >
