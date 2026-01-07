@@ -45,8 +45,16 @@ export const AiDialog: FC = () => {
     useEffect(() => {
         const handleOpenModal = (event: any) => {
             setOpened(true);
-            if (event.detail?.prompt) {
-                setPrompt(event.detail.prompt);
+            const newPrompt = event.detail?.prompt || "";
+            if (newPrompt) {
+                setPrompt(newPrompt);
+            }
+
+            if (event.detail?.autoRun && newPrompt) {
+                // Use a small timeout to let state update and UI render before streaming
+                setTimeout(() => {
+                    handleSend(newPrompt);
+                }, 100);
             }
         };
 
@@ -61,14 +69,15 @@ export const AiDialog: FC = () => {
         }
     }, [opened, initialPrompt]);
 
-    const handleSend = async () => {
-        if (!prompt.trim() || isStreaming) return;
+    const handleSend = async (overridePrompt?: string) => {
+        const promptToSend = overridePrompt || prompt;
+        if (!promptToSend.trim() || isStreaming) return;
 
         resetContent();
         await startStream({
             action: AiAction.CUSTOM,
-            prompt: prompt,
-            content: "", // No selection text in this mode
+            prompt: promptToSend,
+            content: "",
         });
     };
 

@@ -548,6 +548,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
             detail: {
               prompt:
                 "Create a detailed Project Management Plan including Project Overview (Goals, Scope), Team Roles table, Key Milestones list, and a preliminary Weekly Schedule.",
+              autoRun: true,
             },
           }),
         );
@@ -565,6 +566,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
             detail: {
               prompt:
                 "Create a Kanban board using a Markdown table with 3 columns: 'To Do', 'In Progress', and 'Done'. Fill it with 3-4 example tasks for a software project. Use emojis for fun.",
+              autoRun: true,
             },
           }),
         );
@@ -582,6 +584,7 @@ const CommandGroups: SlashMenuGroupedItemsType = {
             detail: {
               prompt:
                 "Create a Meeting Notes template. Include sections for: Date/Time, Attendees, Agenda, Key Decisions, Action Items (checklist), and Next Meeting details.",
+              autoRun: true,
             },
           }),
         );
