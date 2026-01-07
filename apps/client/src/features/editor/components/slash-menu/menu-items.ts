@@ -573,11 +573,13 @@ const CommandGroups: SlashMenuGroupedItemsType = {
                 content: [
                   {
                     type: "taskCard",
-                    attrs: { status: "To Do", ticketId: "TASK-1", priority: "Medium" }
+                    attrs: { status: "To Do", ticketId: "TASK-1", priority: "Medium" },
+                    content: [{ type: "paragraph", content: [{ type: "text", text: "Design system buttons" }] }]
                   },
                   {
                     type: "taskCard",
-                    attrs: { status: "To Do", ticketId: "TASK-2", priority: "High" }
+                    attrs: { status: "To Do", ticketId: "TASK-2", priority: "High" },
+                    content: [{ type: "paragraph", content: [{ type: "text", text: "API authentication setup" }] }]
                   }
                 ]
               },
@@ -587,7 +589,8 @@ const CommandGroups: SlashMenuGroupedItemsType = {
                 content: [
                   {
                     type: "taskCard",
-                    attrs: { status: "In Progress", ticketId: "TASK-3", priority: "Critical" }
+                    attrs: { status: "In Progress", ticketId: "TASK-3", priority: "Critical" },
+                    content: [{ type: "paragraph", content: [{ type: "text", text: "Fix mobile responsiveness" }] }]
                   }
                 ]
               },
@@ -597,7 +600,8 @@ const CommandGroups: SlashMenuGroupedItemsType = {
                 content: [
                   {
                     type: "taskCard",
-                    attrs: { status: "Done", ticketId: "TASK-4", priority: "Low" }
+                    attrs: { status: "Done", ticketId: "TASK-4", priority: "Low" },
+                    content: [{ type: "paragraph", content: [{ type: "text", text: "Project setup and repo" }] }]
                   }
                 ]
               },
