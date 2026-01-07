@@ -56,10 +56,26 @@ export const KanbanColumnView = (props: any) => {
         const pos = getPos();
         const endPos = pos + node.nodeSize - 1;
 
+        // Find the highest existing task number in the document
+        let maxTaskNum = 0;
+        editor.state.doc.descendants((n: any) => {
+            if (n.type.name === 'taskCard' && n.attrs.ticketId) {
+                const match = n.attrs.ticketId.match(/TASK-(\d+)/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxTaskNum) maxTaskNum = num;
+                }
+            }
+            return true;
+        });
+
+        const newTicketId = `TASK-${maxTaskNum + 1}`;
+
         editor.chain().insertContentAt(endPos, {
             type: "taskCard",
             attrs: {
                 status: node.attrs.title,
+                ticketId: newTicketId,
             },
             content: [
                 {
