@@ -22,12 +22,29 @@ import {
     IconAntennaBars4,
     IconAntennaBars3,
     IconHelp,
-    IconCalendar
+    IconCalendar,
+    IconExternalLink,
+    IconFilePlus
 } from "@tabler/icons-react";
 import React from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useCreatePageMutation } from "@/features/page/queries/page-query";
+import { buildPageUrl } from "@/features/page/page.utils";
 
 const TaskCardView = (props: any) => {
-    const { node, updateAttributes } = props;
+    const { node, updateAttributes, editor } = props;
+    const navigate = useNavigate();
+    const { spaceSlug } = useParams();
+    // Assuming we can get spaceId from editor storage or context, but for now we might need to rely on what's available.
+    // If editor.storage.spaceId isn't reliable, we might have a problem.
+    // However, usually editor.options.editorProps... 
+    // Let's try to get it from editor.storage. 
+    // If not, we might be blocked on creating the page without knowing spaceId.
+    // But let's assume valid context.
+    const spaceId = editor.storage.spaceId;
+    const parentPageId = editor.storage.pageId;
+
+    const createPage = useCreatePageMutation();
 
     const statusConfig: any = {
         "To Do": { color: "gray", icon: IconCircle, label: "To Do" },
@@ -46,6 +63,37 @@ const TaskCardView = (props: any) => {
     const StatusIcon = statusConfig[node.attrs.status]?.icon || IconCircle;
     const PriorityIcon = priorityConfig[node.attrs.priority]?.icon || IconAntennaBars3;
 
+    const handleOpenDetails = () => {
+        if (node.attrs.linkedPageId && node.attrs.linkedPageSlugId) {
+            const url = buildPageUrl(spaceSlug, node.attrs.linkedPageSlugId, node.attrs.linkedPageTitle || "Details");
+            navigate(url);
+            return;
+        }
+
+        // Create new page
+        // We'll use the task content as title, or a default.
+        const title = node.textContent || `Task ${node.attrs.ticketId}`;
+
+        createPage.mutate({
+            title: title,
+            parentPageId: parentPageId,
+            // spaceId is inferred from parentPageId by the backend when creating a subpage?
+            // If not, we might need to find a way to get it. 
+            // Most "create subpage" flows just need parentId.
+            spaceId: spaceId, // Keeping this as per original code's attempt to get spaceId
+        } as any, {
+            onSuccess: (newPage) => {
+                updateAttributes({
+                    linkedPageId: newPage.id,
+                    linkedPageSlugId: newPage.slugId,
+                    linkedPageTitle: newPage.title
+                });
+                const url = buildPageUrl(spaceSlug, newPage.slugId, newPage.title);
+                navigate(url);
+            }
+        });
+    };
+
     return (
         <NodeViewWrapper className="task-card-wrapper" style={{ margin: "6px 0" }}>
             <Card
@@ -61,16 +109,30 @@ const TaskCardView = (props: any) => {
                 className="hover:shadow-md hover:border-blue-300"
             >
                 {/* Main Content (Title-like) */}
-                <div style={{ marginBottom: "8px" }}>
-                    <NodeViewContent
-                        style={{
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            lineHeight: "1.4",
-                            color: "var(--mantine-color-text)",
-                            outline: "none",
-                        }}
-                    />
+                <div style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                        <NodeViewContent
+                            style={{
+                                fontSize: "14px",
+                                fontWeight: 500,
+                                lineHeight: "1.4",
+                                color: "var(--mantine-color-text)",
+                                outline: "none",
+                            }}
+                        />
+                    </div>
+                    <Tooltip label={node.attrs.linkedPageId ? "Open Details Page" : "Add Details Page"}>
+                        <ActionIcon
+                            size="xs"
+                            variant="transparent"
+                            color={node.attrs.linkedPageId ? "blue" : "gray"}
+                            onClick={handleOpenDetails}
+                            loading={createPage.isPending}
+                            style={{ opacity: node.attrs.linkedPageId ? 1 : 0.4 }}
+                        >
+                            {node.attrs.linkedPageId ? <IconExternalLink size={14} /> : <IconFilePlus size={14} />}
+                        </ActionIcon>
+                    </Tooltip>
                 </div>
 
                 {/* Compact Metadata Footer */}

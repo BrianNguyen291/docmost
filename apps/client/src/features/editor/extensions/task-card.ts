@@ -28,6 +28,15 @@ export const TaskCard = Node.create({
             dueDate: {
                 default: null,
             },
+            linkedPageId: {
+                default: null,
+            },
+            linkedPageSlugId: {
+                default: null,
+            },
+            linkedPageTitle: {
+                default: null,
+            },
         };
     },
 
