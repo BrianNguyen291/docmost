@@ -586,6 +586,51 @@ const CommandGroups: SlashMenuGroupedItemsType = {
         );
       },
     },
+    {
+      title: "Project Tracker",
+      description: "Insert a project tracking table.",
+      searchTerms: ["tracker", "project", "task", "status", "table"],
+      icon: IconList,
+      command: ({ editor, range }: CommandProps) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent(`
+            <table>
+              <thead>
+                <tr>
+                  <th style="background-color: #f1f3f5">Status</th>
+                  <th style="background-color: #f1f3f5">Task</th>
+                  <th style="background-color: #f1f3f5">Assignee</th>
+                  <th style="background-color: #f1f3f5">Due Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span data-type="mention" class="mention" style="background-color: #ffe8cc; color: #fd7e14; padding: 0 4px; border-radius: 4px;">To Do</span></td>
+                  <td>Define project scope</td>
+                  <td>@Unassigned</td>
+                  <td>2024-01-01</td>
+                </tr>
+                <tr>
+                  <td><span data-type="mention" class="mention" style="background-color: #eebefa; color: #be4bdb; padding: 0 4px; border-radius: 4px;">In Progress</span></td>
+                  <td>Design mockups</td>
+                  <td>@Unassigned</td>
+                  <td>2024-01-05</td>
+                </tr>
+                 <tr>
+                  <td><span data-type="mention" class="mention" style="background-color: #c0eb75; color: #66a80f; padding: 0 4px; border-radius: 4px;">Done</span></td>
+                  <td>Kickoff meeting</td>
+                  <td>@Unassigned</td>
+                  <td>2024-01-10</td>
+                </tr>
+              </tbody>
+            </table>
+          `)
+          .run();
+      },
+    },
   ],
 };
 
