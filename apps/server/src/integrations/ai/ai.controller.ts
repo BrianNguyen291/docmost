@@ -12,6 +12,7 @@ import { Response } from 'express';
 import { AiService } from './ai.service';
 import { AiGenerateDto, AiContentResponse, AiAction } from './dto/ai-generate.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { SkipTransform } from '../../common/decorators/skip-transform.decorator';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
@@ -25,6 +26,7 @@ export class AiController {
     }
 
     @Post('generate/stream')
+    @SkipTransform()
     async generateStream(
         @Body() dto: AiGenerateDto,
         @Res() res: Response,
