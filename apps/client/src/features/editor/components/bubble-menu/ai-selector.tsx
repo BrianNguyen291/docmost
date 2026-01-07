@@ -7,6 +7,10 @@ import {
     Loader,
     Text,
     Stack,
+    Modal,
+    Button,
+    Group,
+    ScrollArea,
 } from "@mantine/core";
 import {
     IconSparkles,
@@ -18,6 +22,8 @@ import {
     IconListDetails,
     IconWriting,
     IconMessage,
+    IconCheck,
+    IconX,
 } from "@tabler/icons-react";
 import { useEditor } from "@tiptap/react";
 import { useAiStream } from "@/ee/ai/hooks/use-ai.ts";
@@ -43,8 +49,9 @@ export const AiSelector: FC<AiSelectorProps> = ({
     setIsOpen,
 }) => {
     const { t } = useTranslation();
-    const { startStream, isStreaming, content, resetContent } = useAiStream();
-    const [showResult, setShowResult] = useState(false);
+    const { startStream, isStreaming, content, resetContent, stopStream } = useAiStream();
+    const [showResultModal, setShowResultModal] = useState(false);
+    const [selectionRange, setSelectionRange] = useState<{ from: number; to: number } | null>(null);
 
     const aiMenuItems: AiMenuItem[] = [
         {
@@ -97,7 +104,9 @@ export const AiSelector: FC<AiSelectorProps> = ({
 
         if (!selectedText.trim()) return;
 
-        setShowResult(true);
+        setSelectionRange({ from, to });
+        setShowResultModal(true);
+        setIsOpen(false);
         resetContent();
 
         await startStream({
@@ -106,95 +115,100 @@ export const AiSelector: FC<AiSelectorProps> = ({
         });
     };
 
-    const handleInsert = () => {
-        if (!editor || !content) return;
+    const handleReplace = () => {
+        if (!editor || !content || !selectionRange) return;
 
-        const { from, to } = editor.state.selection;
+        const { from, to } = selectionRange;
         editor.chain().focus().deleteRange({ from, to }).insertContent(content).run();
 
-        setShowResult(false);
+        handleClose();
+    };
+
+    const handleClose = () => {
+        if (isStreaming) {
+            stopStream();
+        }
+        setShowResultModal(false);
         resetContent();
-        setIsOpen(false);
+        setSelectionRange(null);
     };
-
-    const handleReplace = () => {
-        handleInsert();
-    };
-
-    const handleCancel = () => {
-        setShowResult(false);
-        resetContent();
-        setIsOpen(false);
-    };
-
-    if (showResult) {
-        return (
-            <Stack gap="xs" p="sm" style={{ maxWidth: 400, maxHeight: 300, overflow: "auto" }}>
-                {isStreaming ? (
-                    <Stack align="center" gap="xs">
-                        <Loader size="sm" />
-                        <Text size="sm" c="dimmed">{t("ai.generating", "Generating...")}</Text>
-                    </Stack>
-                ) : null}
-                {content && (
-                    <>
-                        <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-                            {content}
-                        </Text>
-                        <Menu.Divider />
-                        <Stack gap="xs" justify="flex-end" style={{ flexDirection: "row" }}>
-                            <ActionIcon
-                                variant="subtle"
-                                color="gray"
-                                onClick={handleCancel}
-                                disabled={isStreaming}
-                            >
-                                ✕
-                            </ActionIcon>
-                            <ActionIcon
-                                variant="filled"
-                                color="blue"
-                                onClick={handleReplace}
-                                disabled={isStreaming || !content}
-                            >
-                                ✓
-                            </ActionIcon>
-                        </Stack>
-                    </>
-                )}
-            </Stack>
-        );
-    }
 
     return (
-        <Menu opened={isOpen} onChange={setIsOpen} position="bottom-start" withinPortal>
-            <Menu.Target>
-                <Tooltip label={t("ai.aiAssistant", "AI Assistant")} withArrow>
-                    <ActionIcon
-                        variant="default"
-                        size="lg"
-                        radius="0"
-                        style={{ border: "none" }}
-                        onClick={() => setIsOpen(!isOpen)}
-                    >
-                        <IconSparkles style={{ width: rem(16) }} stroke={2} />
-                    </ActionIcon>
-                </Tooltip>
-            </Menu.Target>
+        <>
+            <Menu opened={isOpen} onChange={setIsOpen} position="bottom-start" withinPortal>
+                <Menu.Target>
+                    <Tooltip label={t("ai.aiAssistant", "AI Assistant")} withArrow>
+                        <ActionIcon
+                            variant="default"
+                            size="lg"
+                            radius="0"
+                            style={{ border: "none" }}
+                            onClick={() => setIsOpen(!isOpen)}
+                        >
+                            <IconSparkles style={{ width: rem(16) }} stroke={2} />
+                        </ActionIcon>
+                    </Tooltip>
+                </Menu.Target>
 
-            <Menu.Dropdown>
-                <Menu.Label>{t("ai.aiActions", "AI Actions")}</Menu.Label>
-                {aiMenuItems.map((item) => (
-                    <Menu.Item
-                        key={item.action}
-                        leftSection={<item.icon style={{ width: rem(14) }} stroke={1.5} />}
-                        onClick={() => handleAiAction(item.action)}
-                        disabled={isStreaming}
-                    >
-                        {item.label}
-                    </Menu.Item>
-                ))}
-            </Menu.Dropdown>
-        </Menu>
+                <Menu.Dropdown>
+                    <Menu.Label>{t("ai.aiActions", "AI Actions")}</Menu.Label>
+                    {aiMenuItems.map((item) => (
+                        <Menu.Item
+                            key={item.action}
+                            leftSection={<item.icon style={{ width: rem(14) }} stroke={1.5} />}
+                            onClick={() => handleAiAction(item.action)}
+                        >
+                            {item.label}
+                        </Menu.Item>
+                    ))}
+                </Menu.Dropdown>
+            </Menu>
+
+            <Modal
+                opened={showResultModal}
+                onClose={handleClose}
+                title={t("ai.aiResult", "AI Result")}
+                size="md"
+                centered
+            >
+                <Stack gap="md">
+                    {isStreaming && !content && (
+                        <Stack align="center" gap="xs" py="lg">
+                            <Loader size="md" />
+                            <Text size="sm" c="dimmed">{t("ai.generating", "Generating...")}</Text>
+                        </Stack>
+                    )}
+
+                    {content && (
+                        <ScrollArea h={250}>
+                            <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+                                {content}
+                            </Text>
+                            {isStreaming && <Loader size="xs" mt="xs" />}
+                        </ScrollArea>
+                    )}
+
+                    <Group justify="flex-end" gap="sm">
+                        <Button
+                            variant="subtle"
+                            color="gray"
+                            leftSection={<IconX size={16} />}
+                            onClick={handleClose}
+                        >
+                            {t("common.cancel", "Cancel")}
+                        </Button>
+                        <Button
+                            variant="filled"
+                            color="blue"
+                            leftSection={<IconCheck size={16} />}
+                            onClick={handleReplace}
+                            disabled={isStreaming || !content}
+                        >
+                            {t("ai.replace", "Replace")}
+                        </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+        </>
     );
 };
